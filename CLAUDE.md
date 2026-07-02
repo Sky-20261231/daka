@@ -15,8 +15,19 @@
 ├── manifest.json   # PWA 清单，standalone 模式，SVG 图标
 ├── sw.js           # Service Worker：缓存 + 定时提醒通知
 ├── 使用说明.md      # 用户操作指南（分享给使用者的文档）
-└── CLAUDE.md       # 本文件（给 AI 助手的项目上下文）
+├── CLAUDE.md       # 本文件（给 AI 助手的项目上下文）
+└── .claude/        # Claude Code 本地设置（不上传到 GitHub）
 ```
+
+## 待办事项
+
+- [x] ~~PWA 核心功能开发（打卡/复盘/设置/提醒）~~ ✅ 2026-07-01
+- [x] ~~GitHub Pages 部署上线~~ ✅ 2026-07-02
+- [x] ~~编写用户使用说明~~ ✅ 2026-07-02
+- [ ] **推送未同步的本地 commit**（使用说明.md + CLAUDE.md）（优先级：低）
+  - 等待网络恢复后执行 `git push`
+- [ ] **扩展数据模型**：给 habits/records 加 `updatedAt` 字段（优先级：低）
+  - 为可能的跨设备同步做准备，目前不影响功能
 
 ## 架构设计
 
@@ -49,7 +60,9 @@
 | unit | string | 数值型的单位，完成型为空 |
 | color | string | 颜色 hex 值 |
 | createdAt | number | 毫秒时间戳 |
-| updatedAt | number | （预留字段，当前未使用） |
+| createdAt | number | 毫秒时间戳 |
+
+> ⚠️ `updatedAt` 字段当前未实现，已在待办中标记为后续扩展项。
 
 **`records`** store（keyPath: `id`，indexes: `habitId`, `date`, `habitDate`）：
 | 字段 | 类型 | 说明 |
@@ -59,6 +72,8 @@
 | date | string | YYYY-MM-DD 格式日期 |
 | timestamp | number | 毫秒时间戳 |
 | value | boolean\|number | 完成型为 `true`，数值型为数字 |
+
+> ⚠️ `updatedAt` 字段当前未实现，已在待办中标记为后续扩展项。
 
 数据**完全本地存储**，不上传任何服务器，无同步机制。
 
