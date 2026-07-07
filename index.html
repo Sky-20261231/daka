@@ -691,6 +691,7 @@ async function renderTrend() {
     recent7Data.push({ label: `周${['日','一','二','三','四','五','六'][d.getDay()]} ${d.getMonth()+1}/${d.getDate()}`, value: total });
   }
   const maxRecent7 = Math.max(...recent7Data.map(d => d.value), 1);
+  const barMaxH = 80; // bar最大像素高度，确保正比
 
   // 时间趋势曲线（从首次打卡开始）
   const dailyData = [];
@@ -719,7 +720,7 @@ async function renderTrend() {
       <div class="trend-chart">
         ${weeklyData.map(d => `
           <div class="trend-bar">
-            <div class="trend-bar-fill" style="height:${d.value/maxWeek*100}%;background:${h.color}"></div>
+            <div class="trend-bar-fill" style="height:${Math.round(d.value/maxWeek*barMaxH)}px;background:${h.color}"></div>
             <span class="trend-value">${d.value}</span>
             <span class="trend-label">${d.label}</span>
           </div>
@@ -731,7 +732,7 @@ async function renderTrend() {
       <div class="trend-chart">
         ${monthlyData.map(d => `
           <div class="trend-bar">
-            <div class="trend-bar-fill" style="height:${d.value/maxMonth*100}%;background:${h.color}"></div>
+            <div class="trend-bar-fill" style="height:${Math.round(d.value/maxMonth*barMaxH)}px;background:${h.color}"></div>
             <span class="trend-value">${d.value}</span>
             <span class="trend-label">${d.label}</span>
           </div>
@@ -743,7 +744,7 @@ async function renderTrend() {
       <div class="trend-chart">
         ${recent7Data.map(d => `
           <div class="trend-bar">
-            <div class="trend-bar-fill" style="height:${d.value/maxRecent7*100}%;background:${h.color}"></div>
+            <div class="trend-bar-fill" style="height:${Math.round(d.value/maxRecent7*barMaxH)}px;background:${h.color}"></div>
             <span class="trend-value">${d.value}</span>
             <span class="trend-label">${d.label}</span>
           </div>
