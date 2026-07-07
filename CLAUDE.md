@@ -25,6 +25,9 @@
 - [x] ~~GitHub Pages 部署上线~~ ✅ 2026-07-02
 - [x] ~~编写用户使用说明~~ ✅ 2026-07-02
 - [x] ~~推送未同步的本地 commit~~ ✅ 2026-07-07
+- [x] ~~数值型统计加累计打卡天数 + 趋势图起点改为首次打卡日~~ ✅ 2026-07-07
+- [x] ~~趋势图 bar 高度改用 JS 像素计算（CSS 百分比在 flex 中不可靠）~~ ✅ 2026-07-07
+- [x] ~~SW 缓存升级 v2 + activate 清理旧缓存~~ ✅ 2026-07-07
 - [ ] **扩展数据模型**：给 habits/records 加 `updatedAt` 字段（优先级：低）
   - 为可能的跨设备同步做准备，目前不影响功能
 
@@ -79,7 +82,9 @@
 ### PWA 机制
 
 **Service Worker（sw.js）**：
-- 缓存策略：cache-first，缓存 index.html 和 manifest.json（`dakaApp-v1`）
+- 缓存策略：cache-first，缓存 index.html 和 manifest.json（当前 `dakaApp-v2`）
+- 每次部署更新必须 bump CACHE 版本号（v2→v3→…），否则 PWA 桌面版不会更新
+- `activate` 中自动清理旧版本缓存
 - `SKIP_WAITING` + `clients.claim()`：更新 SW 后立即接管
 - 消息通道：主线程发 `SCHEDULE_REMINDER` 消息 → SW 计算下一次提醒时间 → 到时 `showNotification`
 - 通知点击：聚焦已有窗口或打开新窗口
@@ -110,7 +115,8 @@
 
 ### 更新注意事项
 
-- 如果需要清除旧缓存，修改 `sw.js` 中的 `CACHE` 名称（如 `dakaApp-v2`）
+- **每次部署必须 bump SW 缓存版本**：修改 `sw.js` 中的 `CACHE` 名称（如 `dakaApp-v3`），否则 PWA 桌面版一直显示旧缓存
+- **CSS 百分比高度在 flex 容器中不可靠**：趋势图 bar 高度已改用 JS 像素计算（`Math.round(value/max*80)px`），不要改回 CSS 百分比
 - 修改 IndexedDB schema 时，必须在 `onupgradeneeded` 中做版本迁移
 - manifest.json 中 `start_url` 不能改，否则 PWA 丢失
 
