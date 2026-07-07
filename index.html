@@ -646,44 +646,55 @@ async function renderTrend() {
   const now = new Date(); now.setHours(23,59,59,999);
   const getWeekStart = d => { const day = d.getDay(); const diff = day === 0 ? -6 : 1 - day; const w = new Date(d); w.setDate(w.getDate() + diff); w.setHours(0,0,0,0); return w; };
 
-  // 最近8周数据
-  const weeklyData = [];
-  for (let i = 7; i >= 0; i--) {
-    const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() - i * 7);
-    const weekStart = getWeekStart(weekEnd);
-    const weekEndCopy = new Date(weekEnd); weekEndCopy.setHours(23,59,59,999);
-    const total = recs.filter(r => { const d = new Date(r.date + 'T00:00:00'); return d >= weekStart && d <= weekEndCopy; }).reduce((s, r) => s + (r.value || 0), 0);
-    weeklyData.push({ label: `${weekStart.getMonth()+1}/${weekStart.getDate()}`, value: total });
+  // 首次打卡日期（所有趋势的起点）
+  let firstDate = null;
+  if (recs.length > 0) {
+    firstDate = new Date(Math.min(...recs.map(r => new Date(r.date + 'T00:00:00').getTime())));
+    firstDate.setHours(0,0,0,0);
   }
 
-  // 最近6个月数据
+  // 按周趋势（从首次打卡周开始）
+  const weeklyData = [];
+  if (firstDate) {
+    const firstWeekStart = getWeekStart(new Date(firstDate));
+    let ws = new Date(firstWeekStart);
+    while (ws <= now) {
+      const we = new Date(ws); we.setDate(we.getDate() + 6); we.setHours(23,59,59,999);
+      const total = recs.filter(r => { const d = new Date(r.date + 'T00:00:00'); return d >= ws && d <= we; }).reduce((s, r) => s + (r.value || 0), 0);
+      weeklyData.push({ label: `${ws.getMonth()+1}/${ws.getDate()}`, value: total });
+      ws.setDate(ws.getDate() + 7);
+    }
+  }
+
+  // 按月趋势（从首次打卡月开始）
   const monthlyData = [];
-  for (let i = 5; i >= 0; i--) {
-    const m = new Date(now); m.setMonth(m.getMonth() - i); m.setDate(1); m.setHours(0,0,0,0);
-    const nextM = new Date(m); nextM.setMonth(nextM.getMonth() + 1);
-    const total = recs.filter(r => { const d = new Date(r.date + 'T00:00:00'); return d >= m && d < nextM; }).reduce((s, r) => s + (r.value || 0), 0);
-    monthlyData.push({ label: `${m.getMonth()+1}月`, value: total });
+  if (firstDate) {
+    let m = new Date(firstDate); m.setDate(1); m.setHours(0,0,0,0);
+    while (m <= now) {
+      const nextM = new Date(m); nextM.setMonth(nextM.getMonth() + 1);
+      const total = recs.filter(r => { const d = new Date(r.date + 'T00:00:00'); return d >= m && d < nextM; }).reduce((s, r) => s + (r.value || 0), 0);
+      monthlyData.push({ label: `${m.getMonth()+1}月`, value: total });
+      m.setMonth(m.getMonth() + 1);
+    }
   }
 
   const maxWeek = Math.max(...weeklyData.map(d => d.value), 1);
   const maxMonth = Math.max(...monthlyData.map(d => d.value), 1);
 
-  // 周内分布（周一到周日的平均值）
-  const weekdayData = [0,1,2,3,4,5,6].map(wd => {
-    const filtered = recs.filter(r => new Date(r.date + 'T00:00:00').getDay() === wd);
-    const dailyTotals = {};
-    filtered.forEach(r => { dailyTotals[r.date] = (dailyTotals[r.date] || 0) + (r.value || 0); });
-    const values = Object.values(dailyTotals);
-    const avg = values.length ? values.reduce((s,v)=>s+v,0) / values.length : 0;
-    return { label: ['日','一','二','三','四','五','六'][wd], value: Math.round(avg * 10) / 10 };
-  });
-  const maxWeekday = Math.max(...weekdayData.map(d => d.value), 1);
+  // 最近7天
+  const recent7Data = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
+    const ds = fmtDate(d);
+    const dayRecs = recs.filter(r => r.date === ds);
+    const total = dayRecs.reduce((s, r) => s + (r.value || 0), 0);
+    recent7Data.push({ label: `周${['日','一','二','三','四','五','六'][d.getDay()]} ${d.getMonth()+1}/${d.getDate()}`, value: total });
+  }
+  const maxRecent7 = Math.max(...recent7Data.map(d => d.value), 1);
 
   // 时间趋势曲线（从首次打卡开始）
   const dailyData = [];
-  if (recs.length > 0) {
-    const firstDate = new Date(Math.min(...recs.map(r => new Date(r.date + 'T00:00:00').getTime())));
-    firstDate.setHours(0,0,0,0);
+  if (firstDate) {
     const totalDays = Math.floor((now - firstDate) / (1000 * 60 * 60 * 24));
     for (let i = 0; i <= totalDays; i++) {
       const d = new Date(firstDate); d.setDate(d.getDate() + i); d.setHours(0,0,0,0);
@@ -704,7 +715,7 @@ async function renderTrend() {
 
   el.innerHTML = `
     <div class="trend-card">
-      <div class="trend-title">按周趋势（最近8周）</div>
+      <div class="trend-title">按周趋势</div>
       <div class="trend-chart">
         ${weeklyData.map(d => `
           <div class="trend-bar">
@@ -716,7 +727,7 @@ async function renderTrend() {
       </div>
     </div>
     <div class="trend-card">
-      <div class="trend-title">按月趋势（最近6个月）</div>
+      <div class="trend-title">按月趋势</div>
       <div class="trend-chart">
         ${monthlyData.map(d => `
           <div class="trend-bar">
@@ -728,11 +739,11 @@ async function renderTrend() {
       </div>
     </div>
     <div class="trend-card">
-      <div class="trend-title">周内分布（平均值）</div>
+      <div class="trend-title">最近7天</div>
       <div class="trend-chart">
-        ${weekdayData.map(d => `
+        ${recent7Data.map(d => `
           <div class="trend-bar">
-            <div class="trend-bar-fill" style="height:${d.value/maxWeekday*100}%;background:${h.color}"></div>
+            <div class="trend-bar-fill" style="height:${d.value/maxRecent7*100}%;background:${h.color}"></div>
             <span class="trend-value">${d.value||''}</span>
             <span class="trend-label">${d.label}</span>
           </div>
