@@ -97,7 +97,7 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'PingFang S
 .trend-card{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
 .trend-title{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text)}
 .trend-chart{display:flex;gap:6px;height:120px;align-items:flex-end;padding-top:10px}
-.trend-bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;min-width:0;align-self:stretch}
+.trend-bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;min-width:0;height:100%}
 .trend-bar-fill{width:100%;border-radius:4px 4px 0 0;transition:height .3s ease;min-height:2px}
 .trend-value{font-size:10px;font-weight:600;color:var(--text);white-space:nowrap}
 .trend-label{font-size:9px;color:var(--text-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center}
@@ -720,7 +720,7 @@ async function renderTrend() {
         ${weeklyData.map(d => `
           <div class="trend-bar">
             <div class="trend-bar-fill" style="height:${d.value/maxWeek*100}%;background:${h.color}"></div>
-            <span class="trend-value">${d.value||''}</span>
+            <span class="trend-value">${d.value}</span>
             <span class="trend-label">${d.label}</span>
           </div>
         `).join('')}
@@ -732,7 +732,7 @@ async function renderTrend() {
         ${monthlyData.map(d => `
           <div class="trend-bar">
             <div class="trend-bar-fill" style="height:${d.value/maxMonth*100}%;background:${h.color}"></div>
-            <span class="trend-value">${d.value||''}</span>
+            <span class="trend-value">${d.value}</span>
             <span class="trend-label">${d.label}</span>
           </div>
         `).join('')}
@@ -744,7 +744,7 @@ async function renderTrend() {
         ${recent7Data.map(d => `
           <div class="trend-bar">
             <div class="trend-bar-fill" style="height:${d.value/maxRecent7*100}%;background:${h.color}"></div>
-            <span class="trend-value">${d.value||''}</span>
+            <span class="trend-value">${d.value}</span>
             <span class="trend-label">${d.label}</span>
           </div>
         `).join('')}
