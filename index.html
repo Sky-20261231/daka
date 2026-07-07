@@ -556,6 +556,10 @@ async function renderReviewStats() {
     // 累计总量
     const totalAll = recs.reduce((s, r) => s + (r.value || 0), 0);
 
+    // 累计打卡天数
+    const daysSet = new Set(recs.map(r => r.date));
+    const totalDays = daysSet.size;
+
     // 单日最高/最低
     const dailyTotals = {};
     recs.forEach(r => { dailyTotals[r.date] = (dailyTotals[r.date] || 0) + (r.value || 0); });
@@ -577,6 +581,7 @@ async function renderReviewStats() {
       <div class="stat-card"><div class="stat-num" style="color:${h.color}">${thisWeekTotal}</div><div class="stat-label">本周总计${unit}</div></div>
       <div class="stat-card"><div class="stat-num" style="color:${h.color}">${thisMonthTotal}</div><div class="stat-label">本月总计${unit}</div></div>
       <div class="stat-card"><div class="stat-num" style="color:${h.color}">${totalAll}</div><div class="stat-label">累计总量${unit}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:${h.color}">${totalDays}</div><div class="stat-label">累计打卡(天)</div></div>
       <div class="stat-card"><div class="stat-num" style="color:${h.color}">${maxDaily}</div><div class="stat-label">单日最高${unit}</div></div>
       <div class="stat-card"><div class="stat-num" style="color:${h.color};font-size:20px">${weekGrowth>0?'↑':'↓'}${Math.abs(weekGrowth)}%</div><div class="stat-label">本周环比</div></div>
       <div class="stat-card"><div class="stat-num" style="color:${h.color};font-size:20px">${monthGrowth>0?'↑':'↓'}${Math.abs(monthGrowth)}%</div><div class="stat-label">本月环比</div></div>
@@ -674,20 +679,28 @@ async function renderTrend() {
   });
   const maxWeekday = Math.max(...weekdayData.map(d => d.value), 1);
 
-  // 时间趋势曲线（最近30天）
+  // 时间趋势曲线（从首次打卡开始）
   const dailyData = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
-    const ds = fmtDate(d);
-    const dayRecs = recs.filter(r => r.date === ds);
-    const total = dayRecs.reduce((s, r) => s + (r.value || 0), 0);
-    dailyData.push({ date: ds, label: `${d.getMonth()+1}/${d.getDate()}`, value: total });
+  if (recs.length > 0) {
+    const firstDate = new Date(Math.min(...recs.map(r => new Date(r.date + 'T00:00:00').getTime())));
+    firstDate.setHours(0,0,0,0);
+    const totalDays = Math.floor((now - firstDate) / (1000 * 60 * 60 * 24));
+    for (let i = 0; i <= totalDays; i++) {
+      const d = new Date(firstDate); d.setDate(d.getDate() + i); d.setHours(0,0,0,0);
+      const ds = fmtDate(d);
+      const dayRecs = recs.filter(r => r.date === ds);
+      const total = dayRecs.reduce((s, r) => s + (r.value || 0), 0);
+      dailyData.push({ date: ds, label: `${d.getMonth()+1}/${d.getDate()}`, value: total });
+    }
   }
-  const maxDaily = Math.max(...dailyData.map(d => d.value), 1);
+  const nDays = dailyData.length;
+  const maxDaily = nDays > 0 ? Math.max(...dailyData.map(d => d.value), 1) : 1;
   const w = 300, hh = 100, pad = 5;
-  const xStep = (w - pad * 2) / 29;
+  const xStep = nDays > 1 ? (w - pad * 2) / (nDays - 1) : (w - pad * 2);
   const points = dailyData.map((d, i) => `${pad + i * xStep},${hh - pad - (d.value / maxDaily * (hh - pad * 2))}`).join(' ');
   const linePath = `M${points.replace(/ /g, ' L')}`;
+  const midIdx = nDays > 2 ? Math.floor((nDays - 1) / 2) : 0;
+  const lastIdx = nDays > 0 ? nDays - 1 : 0;
 
   el.innerHTML = `
     <div class="trend-card">
@@ -727,15 +740,15 @@ async function renderTrend() {
       </div>
     </div>
     <div class="trend-card">
-      <div class="trend-title">时间趋势（最近30天）</div>
+      <div class="trend-title">每日趋势</div>
       <svg class="line-chart" viewBox="0 0 ${w} ${hh}" preserveAspectRatio="none">
         <path d="${linePath}" stroke="${h.color}" stroke-width="2" fill="none"/>
         ${dailyData.map((d, i) => `<circle cx="${pad + i * xStep}" cy="${hh - pad - (d.value / maxDaily * (hh - pad * 2))}" r="${d.value?2:0}" fill="${h.color}"/>`).join('')}
       </svg>
       <div class="line-chart-labels">
-        <span>${dailyData[0].label}</span>
-        <span>${dailyData[14].label}</span>
-        <span>${dailyData[29].label}</span>
+        <span>${dailyData[0]?.label||""}</span>
+        <span>${dailyData[midIdx]?.label||""}</span>
+        <span>${dailyData[lastIdx]?.label||""}</span>
       </div>
     </div>
   `;
